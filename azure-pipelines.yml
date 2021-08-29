@@ -1,0 +1,61 @@
+trigger:
+- develop
+- main
+- release/*
+- hotfix/*
+
+pr:
+- develop
+- release/*
+- hotfix/*
+
+jobs:
+# Build
+- job: Build
+  pool:
+    vmImage: 'windows-2019'
+  steps:
+  - powershell: ./build.ps1
+    displayName: 'Build'
+  - publish: $(Build.SourcesDirectory)/BuildArtifacts/Packages/NuGet
+    artifact: NuGet Package
+    displayName: 'Publish NuGet packages as build artifact'
+# Integration Tests Frosting Windows (.NET 5)
+- job: Test_Frosting_Windows_Net5
+  displayName: Integration Tests Frosting Windows (.NET 5)
+  dependsOn: Build
+  pool:
+    vmImage: 'windows-2019'
+  steps:
+  - download: current
+    artifact: NuGet Package
+    displayName: 'Download build artifact'
+  - task: CopyFiles@2
+    inputs:
+      sourceFolder: $(Pipeline.Workspace)/NuGet Package
+      targetFolder: $(Build.SourcesDirectory)/BuildArtifacts/Packages/NuGet
+    displayName: 'Copy build artifact for test run'
+  - powershell: ./build.ps1 --verbosity=diagnostic
+    workingDirectory: ./tests/frosting/net5.0
+    displayName: 'Run integration tests'
+# Integration Tests Script Runner Windows (.NET tool)
+- job: Test_Script_Runner_Windows_DotNetTool
+  displayName: Integration Tests Script Runner Windows (.NET tool)
+  dependsOn: Build
+  pool:
+    vmImage: 'windows-2019'
+  steps:
+  - download: current
+    artifact: NuGet Package
+    displayName: 'Download build artifact'
+  - task: CopyFiles@2
+    inputs:
+      sourceFolder: $(Pipeline.Workspace)/NuGet Package
+      targetFolder: $(Build.SourcesDirectory)/BuildArtifacts/Packages/NuGet
+    displayName: 'Copy build artifact for test run'
+  - powershell: dotnet tool restore
+    workingDirectory: ./tests/script-runner/
+    displayName: 'Restore .NET Core tool'
+  - powershell: dotnet cake
+    workingDirectory: ./tests/script-runner/
+    displayName: 'Run integration tests'

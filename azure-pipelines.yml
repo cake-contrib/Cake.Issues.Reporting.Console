@@ -15,18 +15,35 @@ jobs:
   pool:
     vmImage: 'windows-2022'
   steps:
+  # .NET 5 required for GitVersion
+  - task: UseDotNet@2
+    inputs:
+      version: '5.x'
+    displayName: 'Install .NET 5'
+  - task: UseDotNet@2
+    inputs:
+      version: '6.x'
+    displayName: 'Install .NET 6'
+  - task: UseDotNet@2
+    inputs:
+      version: '7.x'
+    displayName: 'Install .NET 7'
   - powershell: ./build.ps1
     displayName: 'Build'
   - publish: $(Build.SourcesDirectory)/BuildArtifacts/Packages/NuGet
     artifact: NuGet Package
     displayName: 'Publish NuGet packages as build artifact'
-# Integration Tests Frosting Windows (.NET 5)
-- job: Test_Frosting_Windows_Net5
-  displayName: Integration Tests Frosting Windows (.NET 5)
+# Integration Tests Frosting Windows (.NET 6)
+- job: Test_Frosting_Windows_Net6
+  displayName: Integration Tests Frosting Windows (.NET 6)
   dependsOn: Build
   pool:
     vmImage: 'windows-2019'
   steps:
+  - task: UseDotNet@2
+    inputs:
+      version: '6.x'
+    displayName: 'Install .NET 6'
   - download: current
     artifact: NuGet Package
     displayName: 'Download build artifact'
@@ -36,7 +53,7 @@ jobs:
       targetFolder: $(Build.SourcesDirectory)/BuildArtifacts/Packages/NuGet
     displayName: 'Copy build artifact for test run'
   - powershell: ./build.ps1 --verbosity=diagnostic
-    workingDirectory: ./tests/frosting/net5.0
+    workingDirectory: ./tests/frosting/net6.0
     displayName: 'Run integration tests'
 # Integration Tests Script Runner Windows (.NET tool)
 - job: Test_Script_Runner_Windows_DotNetTool
@@ -45,6 +62,10 @@ jobs:
   pool:
     vmImage: 'windows-2019'
   steps:
+  - task: UseDotNet@2
+    inputs:
+      version: '6.x'
+    displayName: 'Install .NET 6'
   - download: current
     artifact: NuGet Package
     displayName: 'Download build artifact'
@@ -54,5 +75,5 @@ jobs:
       targetFolder: $(Build.SourcesDirectory)/BuildArtifacts/Packages/NuGet
     displayName: 'Copy build artifact for test run'
   - powershell: ./build.ps1 --verbosity=diagnostic
-    workingDirectory: ./tests/frosting/net5.0
+    workingDirectory: ./tests/script-runner
     displayName: 'Run integration tests'
